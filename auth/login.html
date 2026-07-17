@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Invoicent</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/auth.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1><i class="fas fa-file-invoice-dollar"></i> Invoicent</h1>
+                <p>Welcome Back</p>
+            </div>
+
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <div class="input-group">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="email" name="email" placeholder="you@example.com" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                        <button type="button" class="toggle-password" onclick="togglePassword('password')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group checkbox">
+                    <label for="remember_me">
+                        <input type="checkbox" id="remember_me" name="remember_me">
+                        <span>Remember me</span>
+                    </label>
+                    <a href="forgot-password.html" class="forgot-link">Forgot Password?</a>
+                </div>
+
+                <div id="errorMessages" class="error-messages"></div>
+
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p>Don't have an account? <a href="register.html">Sign up here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            loginUser();
+        });
+
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            const type = field.type === 'password' ? 'text' : 'password';
+            field.type = type;
+        }
+
+        async function loginUser() {
+            const form = document.getElementById('loginForm');
+            const errorDiv = document.getElementById('errorMessages');
+            errorDiv.innerHTML = '';
+
+            const formData = new FormData(form);
+            const data = {
+                email: formData.get('email'),
+                password: formData.get('password'),
+                remember_me: formData.get('remember_me') ? true : false,
+                csrf_token: await getCSRFToken()
+            };
+
+            try {
+                const response = await fetch('../api/login.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showSuccess(result.message);
+                    setTimeout(() => {
+                        window.location.href = '../dashboard/index.html';
+                    }, 1500);
+                } else {
+                    showError(result.message);
+                }
+            } catch (error) {
+                showError('An error occurred. Please try again.');
+                console.error('Error:', error);
+            }
+        }
+
+        async function getCSRFToken() {
+            const response = await fetch('../api/csrf-token.php');
+            const data = await response.json();
+            return data.csrf_token;
+        }
+
+        function showSuccess(message) {
+            const alert = document.createElement('div');
+            alert.className = 'alert-success';
+            alert.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            document.body.insertBefore(alert, document.body.firstChild);
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessages');
+            errorDiv.innerHTML = `<div class="error-item"><i class="fas fa-exclamation-circle"></i> ${message}</div>`;
+        }
+    </script>
+</body>
+</html>
